@@ -9,3 +9,6 @@ https://datatracker.ietf.org/doc/html/rfc6633
 https://datatracker.ietf.org/doc/html/rfc6918
 https://datatracker.ietf.org/doc/html/rfc796
 https://datatracker.ietf.org/doc/html/rfc795
+https://www.techtarget.com/searchsecurity/definition/IP-spoofing#:~:text=Internet%20Protocol%20(IP)%20spoofing%20is,the%20sender's%20identity%20or%20both.
+https://datatracker.ietf.org/doc/html/rfc4728
+https://datatracker.ietf.org/doc/html/rfc796
