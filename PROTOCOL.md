@@ -15,3 +15,11 @@ https://www.techtarget.com/searchsecurity/definition/IP-spoofing#:~:text=Interne
 https://datatracker.ietf.org/doc/html/rfc4728
 https://datatracker.ietf.org/doc/html/rfc796
 https://datatracker.ietf.org/doc/html/rfc7841
+https://bford.info/pub/net/p2pnat/
+
+TCP Hole Punching ... 
+
+https://www.netmanias.com/ko/post/blog/5847/nat-network-protocol/stun-rfc-3489-vs-stun-rfc-5389-5780
+
+https://www.itworld.co.kr/news/332393
+
