@@ -23,3 +23,10 @@ https://www.netmanias.com/ko/post/blog/5847/nat-network-protocol/stun-rfc-3489-v
 
 https://www.itworld.co.kr/news/332393
 
+https://blog.naver.com/barcel/221365061220
+
+https://d2.naver.com/helloworld/387756
+
+https://en.wikipedia.org/wiki/TCP_congestion_control
+
+https://datatracker.ietf.org/doc/html/rfc6864
