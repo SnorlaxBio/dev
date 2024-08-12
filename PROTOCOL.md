@@ -30,3 +30,5 @@ https://d2.naver.com/helloworld/387756
 https://en.wikipedia.org/wiki/TCP_congestion_control
 
 https://datatracker.ietf.org/doc/html/rfc6864
+https://man7.org/linux/man-pages/man7/vdso.7.html
+
