@@ -1,14 +1,10 @@
 ## 2. TCP Window Scale Option
 
+<!-- TODO: ### 20240827 | SUMMARY & SLIDE -->
+
 ### 2.1. Introduction
 
 The window scale extension expands the definition of the Transmission Control Protocol <sup>TCP</sup> window to 32 bits and then uses a scale factor to carry this 32 bit value in the 16 bit window field of the Transmission Control Protocol <sup>TCP</sup> header Segment Window <sup>SEG.WND</sup>. The scale factor is carried in a new Transmission Control Protocol <sup>TCP</sup> option, Window Scale. This option is sent only in a SYN segment (a segment with the SYN bit on), hence the window scale is fixed in each direction when a connection is opened. (Another design choice would be to specify the window scale in every TCP segment. It would be incorrect to send a window scale option only when the scale factor changed, since a TCP option in an acknowledgment segment will not be delivered reliably (unless the ACK happens to be piggy-backed on data in the other direction). Fixing the scale when the connection is opened has the advantage of lower overhead but the disadvantage that the scale factor cannot be changed during the connection.)
-
-<!-- ### 20240827 | SUMMARY & SLIDE
-
-The window scale extension expands the definition of the Transmission Control Protocol <sup>TCP</sup> window to 32 bits and then uses a scale factor to carry this 32 bit value in the 16 bit window field of the Transmission Control Protocol <sup>TCP</sup> header Segment Window <sup>SEG.WND</sup>. The scale factor is carried in a new Transmission Control Protocol <sup>TCP</sup> option, Window Scale. This option is sent only in a SYN segment (a segment with the SYN bit on), hence the window scale is fixed in each direction when a connection is opened.
-
-  -->
 
 The maximum receive window, and therefore the scale factor, is determined by the maximum receive buffer space. In a typical modern implmenetation, this maximum buffer space is set by default but can be overriden by a user program before a Transmission Control Protocol <sup>TCP</sup> connection is opened. This determines the scale factor, and therefore no new user interface is needed for window scaling.
 
@@ -32,23 +28,6 @@ This option is an offer, not a promise; both sides must send Window Scale option
 This option may be sent in an initial SYN segment (i.e., a segment with the SYN bit on and the ACK bit off). It may also be sent in a SYN ACK segment, but only if a Window Scale option was received in the initial SYN segment. A Window Scale option in a segment without a SYN bit should be ignored.
 
 The Window field in a SYN (i.e., a SYN or SYN ACK) segment itself is never scaled.
-
-<!-- ### 20240827 | SUMMARY & SLIDE
-
-The three byte Window Scale option may be sent in a SYN segment by a TCP. It has two purposes:
-
-1. Indicate that the TCP is prepared to do both send and receive window scaling.
-2. Communicate a scale factor to be appiled to its receive window.
-
-Thus, a TCP that is prepared to scale windows should send the option, even if its own scale factor to 1. The scale factor is limited to a power of two and encoded logarithmically, so it may be implemented by binary shift operations.
-
-This option is an offer, not a promise; both sides must send Window Scale options in their SYN segments to enable window scaling in either direction. If window scaling is enabled, then the Transmission Control Protocol <sup>TCP</sup> that sent this option will right shift its true receive window values by 'shift.cnt' bits for transmission in Segment Window <sup>SEG.WND</sup>. The value 'shift.cnt' may be zero (offering to scale, while applying a scale factor of 1 to the receive window).
-
-This option may be sent in an initial SYN segment (i.e., a segment with the SYN bit on and the ACK bit off). It may also be sent in a SYN ACK segment, but only if a Window Scale option was received in the initial SYN segment. A Window Scale option in a segment without a SYN bit should be ignored.
-
-The Window field in a SYN (i.e., a SYN or SYN ACK) segment itself is never scaled.
-
-  -->
 
 ### 2.3. Using the Window Scale Option
 
