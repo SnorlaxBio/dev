@@ -290,6 +290,31 @@ A connection progresses through a series of states during its lifetime. The stat
 
 <!-- TODO -->
 
+#### 3.5. Establishing a Connection
+
+The "three-way handshake" is the procedure used to establish a connection. This procedure normally is initiated by one TCP peer and responded to by another TCP peer. The procedure also works if two TCP peers simultaneously initiate the procedure. When simultaneous open occurs, each TCP peer receives a SYN segment that carries no acknowledgment after it has sent a SYN. Of course, the arrival of an old duplicate SYN segment can potentially make it appear, to the recipient, that a simulatneous connection initiation is in progress. Proper use of "reset" segments can disambiguate these cases.
+
+<!--
+
+"3방향 핸드셰이크"는 연결을 설정하는 데 사용되는 절차입니다. 이 절차는 일반적으로 한 TCP 피어가 시작하고 다른 TCP 피어가 응답합니다. 이 절차는 두 TCP 피어가 동시에 절차를 시작하는 경우에도 작동합니다. 동시에 열리면 각 TCP 피어는 SYN을 보낸 후 확인이 없는 SYN 세그먼트를 수신합니다. 물론 오래된 중복 SYN 세그먼트가 도착하면 수신자에게 동시 연결 시작이 진행 중인 것처럼 보일 수 있습니다. "재설정" 세그먼트를 적절히 사용하면 이러한 경우를 명확하게 할 수 있습니다.
+
+  -->
+
+Several examples of connection initiation follow. Although these examples do not show connection synchronization using data-carrying segments, this is perfectly legitimate, so long as the receiving TCP endpoint doesn't deliver the data to the user until it is clear the data is valid (e.g., the data is buffered at the receiver until the connection reaches the ESTABLISHED state, given that the three-way handshake reduces the possibility of false connections). It is a trade-off between memory and messages to provide information for this checking.
+
+<!--
+
+다음은 연결 시작의 몇 가지 예입니다. 이러한 예는 데이터 전송 세그먼트를 사용한 연결 동기화를 보여주지 않지만, 수신 TCP 엔드포인트가 데이터가 유효하다는 것이 분명해질 때까지 사용자에게 데이터를 전달하지 않는 한 이는 완벽하게 합법적입니다(예: 3방향 핸드셰이크가 잘못된 연결 가능성을 줄인다고 가정할 때, 연결이 ESTABLISHED 상태에 도달할 때까지 데이터가 수신자에서 버퍼링됨). 이 검사를 위한 정보를 제공하는 것은 메모리와 메시지 간의 트레이드오프입니다.
+
+  -->
+
+The simplest 3WHS is shown in Figure 6. This figures should be interpreted in the following way. Each line is numbered for reference purposes. Right arrow (-->) indicate departure of a TCP segment from TCP Peer A to TCP Peer B or arrival of a segment at B from A. Left arrows (<--) indicate the reverse. Ellipses (...) indicate a segment that is still in the network (delayed). Comments appear in parentheses. TCP connection states represent the state after the departure or arrival of the segment (whose contents are shown in the center of each line). Segment contents are shown in abbreviated form, with sequence number, control flags, and ACK field. Other fields such as window, addresses, lengths, and text have been left out in the interest of clarity.
+
+![Figure 6: Basic Three-way Handshake for Connection Synchronization](./images/Figure6.Basic-Three-Way-Handshake-for-Connection-Synchronization.png)
+
+In line 2 of Figure 2, TCP Peer A begins by sending a SYN segment indicating that it will use sequence numbers starting with sequence number 100. In line 3, TCP Peer B sends a SYN and acknowledge
+
+
 #### 3.8.6. Managing the Window
 
 
