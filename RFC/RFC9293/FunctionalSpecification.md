@@ -3,6 +3,15 @@
 <!-- TODO ### 20240829 | 3.1. Header Format -->
 <!-- TODO ### 20240829 | 3.2. Specific Option Definitions -->
 <!-- TODO ### 20240829 | 3.3. TCP Terminology Overview -->
+
+### 3.3. TCP Terminology Overview
+
+This section includes an overview of key terms needed to understand the detailed protocol operation in the rest of the document. There is glossary of terms in [Section 4. Glossary](./Glossary.md).
+
+#### 3.3.1. Key Connection State Variables
+
+Before we can discuss the operation of the TCP implementation in detail, we need to introduce some detailed terminology. The maintenance of a TCP connection requires maintaining state for several variables. We conceive of these variables being stored in 
+
 <!-- TODO ### 20240829 | 3.4. Sequence Numbers  -->
 
 ### 3.5. Establishing a Connection
