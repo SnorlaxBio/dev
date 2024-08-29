@@ -43,4 +43,65 @@ Simultaneous initiation is only slightly more complex, as is shown in Figure 7. 
 
 ![Figure 7: Simultaneous Connection Synchronization](./images/Figure7.Simultaneous-Connection-Synchronization.png)
 
-A TCP implementation must support simultaneous open attempts. <a name="#must10"><sup>MUST10</sup></a>
+A TCP implementation must support simultaneous open attempts. <sup>MUST10</sup>
+
+Note that a TCP implementation must keep track of whether a connection has reached SYN-RECEIVED state as the result of a passive open or an active open. <sup>MUST11</sup>
+
+The principal reason for the Three-way Handshake is to prevent old duplicate connection initiations from causing confusion. To deal with this, a special control message, reset, is specified. If the receiving TCP peer is in a non-synchronized state (i.e., SYN-SENT, SYN-RECEIVED), it returns to LISTEN on receiving TCP peer is in a non-synchronized state (i.e., SYN-SENT, SYN-RECEIVED), it returns to LISTEN on receiving an acceptable reset. If the TCP peer is one of the synchronized state (ESTABLISHED, FIN-WAIT-1, FIN-WAIT-2, CLOSE-WAIT, CLOSING, LAST-ACK, TIME-WAIT), it aborts the connection and informs its user. We discuss this latter case under "half-open" connections below.
+
+![Figure 8: Recovery from Old Duplicate SYN](./images/Figure8.Recovery-from-Old-Duplicate-SYN.png)
+
+As a simple example of recovery from old duplicates, consider Figure 8. At line 3, an old duplicate SYN arrives at TCP Peer B. TCP Peer B cannot tell that this is an old duplicate, so it responds normally (line 4). TCP Peer A detects that the ACK field is incorrect and returns a RST (reset) with its SEQ field selected to make the segment believable. TCP Peer B, on receiving the RST, returns to the LISTEN state. When the original SYN finally arrives at line 6, the synchronization proceeds normally. If the SYN at line 6 had arrived before the RST, a more complex exchange might have occurred with RST sent in both directions.
+
+#### 3.5.1. Half-Open Connections and Other Anomalies
+
+An established connection is said to be "half-open" if one of the TCP peers has closed or aborted the connection at its end without the knowledge of the other, or if the two ends of the connection have become desynchronized owing to a failure or reboot that resulted in loss of memory. Such connections will automatically become reset if an attempt is made to send data in either direction. However, half-open connections are expected to be unusual.
+
+If at site A the connection no longer exists, then an attempt by the user at site B to send any data on it will result in the site B TCP endpoint receiving a reset control message. Such a message indicates to the site B TCP endpoint that something is wrong, and it is expected to abort the connection.
+
+Assume that two user processes A and B are communicating with one another when a failure or reboot occurs causing loss of memory to A TCP implementation. Depending on the operating system supporting A TCP implementation, it is likely that some error recovery mechanism exists. When the TCP endpoint is up again, A is likely to start again from the beginning or from a recovery point. As a result, A will probably try to open the connection again or try to send on the connection it believes open. In the latter case, it receives the error message "connection not open" from the local TCP implementation. In an attempt establish the connection, A TCP implementation will send a segment containing SYN. This senario leads to the example shown in Figure 9. After TCP Peer A reboots, the user attempts to reopen the connection. TCP Peer B, in the meantime, thinks the connection is open.
+
+![Figure 9: Half-Open Connection Discovery](./images/Figure9.Half-Open-Connection-Discovery.png)
+
+Figure 9: Half-Open Connection Discovery
+
+When the SYN arrives at line 3, TCP Peer B, being in a synchronized state, and the incoming segment outside the window, responds with an acknowledgment indicating what sequence it next expects to hear. TCP Peer A sees that this segment does not acknowledge anything it sent and, being unsynchronized, sends a reset<sup>RST</sup> because it has detected a half-open connection. TCP Peer B aborts at line 5. TCP Peer A will continue to try to establish the connection; the problem is now reduced to the basic Three-way Handshake of Figure 6.
+
+An interesting alternative case occurs when TCP Peer A reboots and TCP Peer B tries to send data on what it thinks is a synchronized connection. This is illustrated in Figure 10. In this case, the data arriving at TCP Peer A from TCP Peer B (line 2) is unacceptable because no such connection exists, so TCP Peer A sends a RST. The RST is acceptable so TCP Peer B processes it and aborts the connection.
+
+![Active Side Causes Half-Open Connection Discovery](./images/Figure10.Active-Side-Causes-Half-Open-Connection-Discovery.png)
+
+In Figure 11, two TCP Peer A and B with passive connections waiting for SYN are depcited. An old duplicate arriving at TCP Peer B (line 2) stirs B into action. A SYN-ACK is returned (line 3) and causes TCP A to generate a RST (the ACK in line 3 is not acceptable). TCP Peer B accepts the reset and returns to its passive LISTEN state.
+
+![Figure 11: Old Duplicate SYN Initiates a Reset on Two Passive Sockets](./images/Figure11.Old-Duplicate-SYN-Initiates-a-Reset-on-Two-Passive-Sockets.png)
+
+A variety of other cases possible, all of which are accounted for by the following rules for RST generation and processing.
+
+#### 3.5.2. Reset Generation
+
+A TCP user or application can issue a reset on a connection at any time, though reset events are also generated by the protocol itself when various error conditions occurs, as described below. The side of connection issuing a reset should enter the TIME-WAIT state, as this generally helps to reduce the load on busy servers for reasons described in [The TIME-WAIT state in TCP and its effect on busy servers](https://ieeexplore.ieee.org/document/752180).
+
+As a general rule, reset <sup>RST</sup> is sent whenever a segment arrives that apparently is not intended for the current connection. A reset must not be sent if it is not clear that this is the case.
+
+There are three groups of states:
+
+1. If the connection does not exist (CLOSED), then a reset is sent in response to any incoming segment except another reset. A SYN segment that does not match an existing connection is rejected by this means.
+
+   If the incoming segment has the ACK bit set, the reset takes its sequence number from the ACK field of the segment; otherwise, the reset has sequence number zero and the ACK field is set to the sum of sequence number and segment length of the incoming segment. The connection remains in the CLOSED state.
+
+2. If the connection is in any non-synchronized state (LISTEN, SYN-SENT, SYN-RECEIVED), and the incoming segment acknowledges something not yet sent (the segment carries an unacceptable ACK), or if an incoming segment has a security level or compartment <sup>[Appendix A.1](https://www.ietf.org/rfc/rfc9293.html#seccomp)</sup> that does not exactly matach the level and compartment requested for the connection, a reset is sent.
+
+   If the incoming segment has an ACK field, the reset takes its sequence number from the ACK field of the segment; otherwise, the reset has sequence number zero and the ACK field is set to the sum of the sequence number and segment length of the incoming segment. The connection remains in the same state.
+
+3. If the connection is in a synchronized state (ESTABLISHED, FIN-WAIT-1, FIN-WAIT-2 CLOSE-WAIT, CLOSING, LAST-ACK, TIME-WAIT), any unacceptable segment (out-of-window sequence number of unacceptable acknowledgment number) must be responded to with an empty acknowledgment segment (without any user data) containing the current send sequence number and an acknowledgment indicating the next sequence number expected to be received, and the connection remains in the same state.
+
+   If an incoming segment has a security level or compartment that does not exactly match the level and compartment requested for the connection, a reset is sent and the connection goes to the CLOSED state. The reset takes its sequence number from the ACK field of the incoming segment.
+
+#### 3.5.3. Reset Processing
+
+In all states except SYN-SENT, all reset <sup>RST</sup> segments are validated by checking their SEQ fields. A reset is valid if its sequence number is in the window. In the SYN-SENT state (a RST received in response to an inital SYN), the RST is acceptable if the ACK field acknowledges the SYN.
+
+The receiver of a RST first validates it, then change state. If the receiver was in the LISTEN state, it ignores it. If the receiver was in SYN-RECEIVED state and had previously been in the LISTEN state, then the receiver returns to the LISTEN state; otherwise, the receiver aborts the connection and does to the CLOSED state. If the receiver was in any other state, it aborts the connection and advises the user and goes to the CLOSED state
+
+TCP implementations should allow a received RST segment to include data <sup>SHOULD 2</sup>. It has been suggested that a RST segment could contain diagnostic data that explains the cause of the RST. No standard has yet been established for such data.
+
