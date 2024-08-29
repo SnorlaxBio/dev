@@ -43,3 +43,4 @@ Simultaneous initiation is only slightly more complex, as is shown in Figure 7. 
 
 ![Figure 7: Simultaneous Connection Synchronization](./images/Figure7.Simultaneous-Connection-Synchronization.png)
 
+A TCP implementation must support simultaneous open attempts. <sup name="must10">MUST10</sup>
