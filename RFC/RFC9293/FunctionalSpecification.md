@@ -2,7 +2,6 @@
 
 <!-- TODO ### 20240829 | 3.1. Header Format -->
 <!-- TODO ### 20240829 | 3.2. Specific Option Definitions -->
-<!-- TODO ### 20240829 | 3.3. TCP Terminology Overview -->
 
 ### 3.3. TCP Terminology Overview
 
@@ -10,9 +9,219 @@ This section includes an overview of key terms needed to understand the detailed
 
 #### 3.3.1. Key Connection State Variables
 
-Before we can discuss the operation of the TCP implementation in detail, we need to introduce some detailed terminology. The maintenance of a TCP connection requires maintaining state for several variables. We conceive of these variables being stored in 
+Before we can discuss the operation of the Transmission Control Protocol <sup>TCP</sup> implementation in detail, we need to introduce some detailed terminology. The maintenance of a Transmission Control Protocol <sup>TCP</sup> connection requires maintaining state for several variables. We conceive of these variables being stored in a connection record called a Transmission Control Block <sup>TCB</sup>. Among the variables stored in Transmission Control Block <sup>TCB</sup> are the local and remote Internet Protocol <sup>IP</sup> addresses and port numbers, the Internet Protocol <sup>IP</sup> security level, and compartment of the connection (see [Appendix A.1](https://www.ietf.org/rfc/rfc9293.html#name-ip-security-compartment-and)), pointers to the user's send and receive buffers, pointers to the retransmit queue and to the current segment. In addition, several variables relating to the send and receive sequence numbers ate stored in the Transmission Control Block <sup>TCB</sup>.
+
+| Variable | Description                                               |
+| -------- | --------------------------------------------------------- |
+| SND.UNA  | Send Unacknowledged                                       |
+| SND.NXT  | Send Next                                                 |
+| SND.WND  | Send Window                                               |
+| SND.UP   | Send Urgent Pointer                                       |
+| SND.WL1  | Segment sequence number used for last window update       |
+| SND.WL2  | Segment acknowledgment number used for last window update |
+| ISS      | Initial Send Sequece number                               |
+
+Table 2: Send Sequence Variables
+
+| Variables | Description                     |
+| --------- | ------------------------------- |
+| RCV.NXT   | Receive Next                    |
+| RCV.WND   | Receive Window                  |
+| RCV.UP    | Receive Urgent Pointer          |
+| IRS       | Initial Receive Sequence number |
+
+Table 3: Receive Sequence Variables
+
+The following diagrams may help to relate some of these variables to the sequence space.
+
+![Figure 3: Send Sequence Space](./images/Figure3.Send-Sequence-Space.png)
+
+- 1 - Old sequence numbers that have been acknowledged
+- 2 - Sequence numbers of unacknowledged data
+- 3 - Sequence numbers allowed for new data transmission
+- 4 - Future sequence numbers that are not yet allowed
+
+Figure 3: Send Sequence Space
+
+The send window is the portion of the sequence space labeled 3 in Figure 3.
+
+![Receive Sequence Space](./images/Figure4.Receive-Sequence-Space.png)
+
+- 1 - Old sequence numbers that have been acknowledged
+- 2 - Sequence numbers allowed for new reception
+- 3 - Future sequence numbers that are not yet allowed
+
+Figure 4: Receive Sequence Space
+
+The receive window is the portion of the sequence space labeled 2 in Figure 4.
+
+There are also some variables used frequently in the discussion that take their values fro the fields of the current segment.
+
+| Variable | Description                   |
+| -------- | ----------------------------- |
+| SEG.SEQ  | Segment Sequence number       |
+| SEG.ACK  | Segment Acknowledgment number |
+| SEG.LEN  | Segment length                |
+| SEG.WND  | Segment Window                |
+| SEG.UP   | Segment urgent pointer        |
+
+Table 4: Current Segment Variables 
+
+#### 3.3.2. State Machine Overview
+
+A connection progress through a series of states durinng its lifetime. The states are: LISTEN, SYN-SENT, SYN-RECEIVED, ESTABLISHED, FIN-WAIT-1, FIN-WAIT-2, CLOSE-WAIT, CLOSING, LAST-ACK, TIME-WAIT, and the fictional state CLOSED. CLOSED is fictional because it represents the state when there is no Transmission Control Block <sup>TCB</sup>, and therefore, no connection. Briefly the meaning of the states are:
+
+- LISTEN
+
+  Represent waiting for a connectino request from any remote Transmission Control Protocol <sup>TCP</sup> peer and port.
+
+- SYN-SENT
+
+  Represents waiting for a matching connection request after having sent a connection request.
+
+- SYN-RECEIVED
+
+  Represents waiting for a confirming connection request acknowledgment after having both received and sent a connection request.
+
+- ESTABLISHED
+
+  Represents an open connection, data received can be delivered to the user. The normal state for the data transfer phase of the connection.
+
+- FIN-WAIT-1
+
+  Represents waiting for a connection termination request from the remote Transmission Control Protocol <sup>TCP</sup> peer, or an acknowledgment of the connection termination request previously sent.
+
+- FIN-WAIT-2
+
+  Represents waiting for a connection termination request from the remote Transmission Control Protocol <sup>TCP</sup> peer.
+
+- CLOSE-WAIT
+
+  Represents waiting for a connection termination request from the local user.
+
+- CLOSING
+
+  Represents waiting for a connection termination request acknowledgment from the remote Transmission Control Protocol <sup>TCP</sup> peer.
+
+- LAST-ACK
+
+  Represents waiting for an acknowledgment of the connection termination request previously sent to the remote Transmission Control Protocol <sup>TCP</sup> peer (this termination request sent to the remote Transmission Control Protocol <sup>TCP</sup> peer already included an acknowledgment of the termination request sent from the remote Transmission Control Protocol <sup>TCP</sup> peer).
+
+- TIME-WAIT
+
+  Represents waiting for enough time to pass to be sure the remote Transmission Control Protocol <sup>TCP</sup> peer received the acknowledgment of its connection termination request and to avoid new connections being impacted by delayed segments from previous connections.
+
+- CLOSED
+
+  Represents no connection state at all.
+
+A Transmission Control Protocol <sup>TCP</sup> connection progresses from one state to another in response to events. The events are the user calls, open, send, receive, close, abort, and status; the incoming segments, particularly those containing the SYN, ACK, RST, and FIN flags; and timeouts.
+
+The open call specifies whether connection establishment is to be actively pursued, or to be passibely waited for.
+
+A passive open request means that the process wants to accept incoming connection requests, in contrast to an active open attempting to initiate a connection.
+
+The state diagram in Figure 5 illustrates only state changes, together with the causing events and resulting actions, but addresses neither error conditions nor actions that are not connected with state changes. In a later section, more detail is offered with respect to the reaction of Transmission Control Protocol <sup>TCP</sup> implementation to events. Some state names are abbreviated or hyphenated differently in the diagram from how they appear elsewhere in the document.
+
+NOTA BENE: This diagram is only a summary and must not be taken as the total specification. Many details are not included.
+
+![Figure 5: TCP Connection State Diagram](./images/Figure5.TCP-Connection-State-Diagram.png)
+
+The following notes apply to Figure 5.
+
+Note 1: The transition from SYN-RECEIVED to LISTEN on receiving a RST is conditional on having reached SYN-RECEIVED after a passive OPEN.
+
+Note 2: The figure omits a transition from FIN-WAIT-1 to TIME-WAIT if a FIN is received and the local FIN is also acknowledged.
+
+Note 3: A RST can be sent from any state with a corresponding transition to TIME-WAIT (see [The TIME-WAIT state in TCP and its effect on busy servers](https://ieeexplore.ieee.org/document/752180) for rationale). These transitions are not explicitly shown; otherwise, the diagram would become very difficult to read. Similarly, receipt of a RST from any state results in a transition to LISTEN or CLOSED, though this also omitted from the diagram for legibility.
 
 <!-- TODO ### 20240829 | 3.4. Sequence Numbers  -->
+
+### 3.4. Sequence Numbers
+
+A fundamental notion in the design is that every octet of data sent over a Transmission Control Protocol <sup>TCP</sup> connection has a sequence number. Since every octet is sequenced, each of them can be acknowledged. The acknowledgment mechanism employed is cumulative so that an acknowledgment of sequence number x indicates that all octets up to but not including x have been received. This mechanism allows for strightforward duplicate detection in the presence of retransmission. The numbering scheme of octets within a segment is as follows: the first data octet immediately following the header is the lowest numbered, and the following octets are numbered consecutively.
+
+It is essential to remember that the actual sequence number space is finite, though large. This space ranges from 0 to 2<sup>32</sup> - 1. Since the space is finite, all arithmetic dealing with sequence numbers must be performed modulo 2<sup>32</sup>. This unsigned arithmetic preserves the relationship of sequence numbers as they cycle from 2<sup>32</sup> - 1 to 0 again. Thre are some subtleties to computer modulo arithmetic, so great care should be taken in programming the comparison of such values. The symbol `=<` means "less than or equal" (modulo 2<sup>32</sup>).
+
+The typical kinds jof sequence number comparisons that the Transmission Control Protocol <sup>TCP</sup> implementation must perform include:
+
+1. Determining that an acknowledgment refers to some sequence number sent but not yet acknowledged.
+2. Determining that all sequence numbers occupied by a segment have been acknowledged (e.g., to remove the segment from a retransmission queue).
+3. Determining that an incoming segment contains sequence numbers that are expected (i.e., that the segment "overlaps" the receive window).
+
+In response to sending data, the Transmission Control Protocol <sup>TCP</sup> endpoint will receive acknowledgments. The following comparisons are needed to process the acknowledgments:
+
+- SND.UNA = Oldest unacknowledged sequence number
+- SND.NXT = Next sequence number to be sent
+- SEG.ACK = Acknowledgment from the receiving TCP peer (next sequence number expected by the receiving TCP peer)
+- SEG.SEQ = First sequence number of a segment
+- SEG.LEN = The number of octets occupied by the data in the segment (counting SYN and FIN)
+- SEG.SEQ + SEG.LEN - 1 = Last seqeunce number of a segment
+
+A new acknowledgment (called an "acceptable ack") is one for which the inequality below holds:
+
+SND.UNA < SEG.ACK = SND.NXT
+
+A segment on the retransmission queue is fully acknowledged if the sum of its sequence number and length is less than or equal to the acknowledgment value in the incoming segmet.
+
+When data is received, the following comparisons are needed:
+
+- RCV.NXT = Next sequence number expected on an incoming segment, and is the left or lower edge of the receive window.
+- RCV.NXT + RCV.WND - 1 = Last sequence number expected on an incoming segment, and is the right or upper edge of the receive window.
+- SEG.SEQ = First sequence number occupied by the incoming segment.
+- SEG.SEQ + SEG.LEN - 1 = Last sequence number occupied by the incoming segment
+
+A segment is judged to occupy a portion of valid receive sequence space if
+
+RCV.NXT =< SEG.SEQ < RCV.NXT + RCV.WND
+
+or
+
+RCV.NXT =< SEG.SEQ + SEG.LEN - 1 < RCV.NXT + RCV.WND
+
+The first part of this test checks to see if the beginning of the segment falls in the window, the second part of the test checks to see if the end of the segment falls in the window; if the segment passes either part of the test, it contains data in the window.
+
+Actually, it is a little more complicated than this. Due to zero windows and zero length segments, we have four cases for the acceptability of an incoming segment:
+
+| Segment Length     | Receive Window     | Test                                   |
+| ------------------ | ------------------ | -------------------------------------- |
+| 0                  | 0                  | SEG.SEQ = RCV.NXT                      |
+| 0                  | Receive Window > 0 | RCV.NXT =< SEG.SEQ < RCV.NXT + RCV.WND |
+| Segment Length > 0 | 0                  | Not acceptable                         |
+| Segment Length > 0 | Receive Window > 0 | RCV.NXT <= SEG.SEQ < RCV.NXT + RCV.WND<br />RCV.NXT =< SEG.SEQ + SEG.LEN - 1 < RCV.NXT + RCV.WND |
+
+Table 5: Segment Acceptability Tests
+
+Note that when the receive window is zero no segments should be acceptable except Acknowledgment <sup>ACK</sup> segments. Thus, it is possible for a Transmission Controll Protocol <sup>TCP</sup> implementation to maintain a zero receive window while transmitting data and receiving Acknowledgment <sup>ACK</sup>. A Transmission Control Protocol <sup>TCP</sup> receiver must process the Reset <sup>RST</sup> and Urgent <sup>URG</sup> fields of all incoming segments, even when the receive window is zero.<sup>MUST 66</sup>
+
+We have taken advantage of the numbering scheme to protect certain control information as well. This is achieved by implicitly including some control flags in the sequence space so they can be retransmitted and acknowledged without confusion (i.e., one and only one copy of the control will be acted upon). Control information is not physically carried in the segment data space. Consequently, we must adopt rules for implicitly assigning sequence numbers to control. The SYN and FIN are the only controls requiring this protection, and these controls are used only at connection opening and closing. For sequence number purposes, the SYN is considered to occur before the first actual data octet of the segment in which it occurs, while the FIN is considered to occur after the last actual data octet in a segment in which it occurs. The Segment Length <sup>SEG.LEN</sup> includes both data and sequence space occupying controls. When a SYN is present, then SEG.SEQ is the sequence number of the SYN.
+
+#### 3.4.1. Initial Sequence Number Selection
+
+A connection is defined by a pair of sockets. Connections can be reused. New instances of a connection will be referred to as incarnations of the connection. The problem that arises from this is -- "How does the Transmission Control Protocol <sup>TCP</sup> implementation identify duplicate segments from previous incarnations of the connection?" This problem becomes apparent if the connection is being opened and closed in quick succession, or if the connection breaks with loss of memory and is then reestablished. To support this, the TIME-WAIT state limits the rate of connection reuse, while the initial sequence number selection described below further protects against ambiguity about which incarnation of a connection an incoming packet corresponds to.
+
+To avoid confusion, we must prevent segments from one incarnation of a connection from being used while the same sequence numbers may still be present in the network from an earlier incarnation. We want to assure this even if a TCP endpoint loses all knowledge of the sequence numbers it has been using. When new connections are created, an Initial Sequence Number <sup>ISN</sup> generator is employed that selects a new 32 bit Initial Sequence Number <sup>ISN</sup>. There are security issues that result if an off path attacker is able to predict or guess Initial Sequence Number <sup>ISN</sup> values. <sup>See [Defending against Sequence Number Attacks](https://www.ietf.org/rfc/rfc6528.html)</sup>
+
+TCP initial sequence numbers are generated from a number sequence that monotonically increases until it wraps, known loosely as a "clock". This clock is a 32 bit counter that typically increments at least once every roughly 4 microseconds, although it is neither assumed to be realtime nor precise, and need not persist across reboots. The clock component is intended to ensure that with a Maximum Segment Lifetime <sup>MSL</sup>, generated Initial Sequence Number <sup>ISN</sup> will be unique since it cycles approximately every 4.55 hours, which is much longer than the Maximum Segment Lifetime <sup>MSL</sup>. Please note that for modern networks that support high data rates where the connectionmight start and quickly advance numbers to overlap within the Maximum Segment Lifetime <sup>MSL</sup>, it is recommended to implement the Timestamp Option as mentioned later in Section 3.4.3.
+
+A TCP implementation must use the above type of "clock" for clock-driven selection of initial sequence number<sup>MUST 8</sup>, and should generate its initial sequence numbers with the expression:
+
+ISN = M + F(Local IP, Local Port, Remote IP, Remote Port, Secret Key)
+
+where `M` is the 4 microsecond timer, and `F()` is a Pseudorandom Function <sup>PRF</sup> of the connection's identifying parameters ("Local IP, Local Port, Remote IP, Remote Port") and a Secret Key ("Secret Key") <sup>SHOULD 1</sup>. `F()` must not be computable from the outside <sup>MUST 9<sup>, or an attacker could still guess at sequence numbers from the Initial Sequence Number <sup>ISN</sup> used for some other connection. The Pseudorandom Function <sup>PRF</sup> could be implemented as a cryptographic hash of the connection of the TCP connection parameters and some secret data. For discussion of the selection of a specific hash algorithm and management of the secret key data, please see Section 3 of [Defending against Sequence Number Attacks](https://www.rfc-editor.org/rfc/rfc6528).
+
+For each connection there is a send sequence number and a receive sequence number. The Initial Send Sequence number <sup>ISS</sup> is chosen by the data sending TCP peer, and the Initial Receive Sequence number <sup>IRS</sup> is learned during the connection establishing procedure.
+
+For a connection to be established or initialized, the two TCP peers must synchronize on each other's initial sequence numbers. This is done in an exchange of connection establishing segments carrying a control bit called "SYN" (for synchronize) and the initial sequence numbers. As a shorthand, segments carrying the SYN bit are also called "SYN". Hence, the solution requires a suitable mechanism for picking an initial sequence number and a slightly involved handshake to exchange the Initial Sequence Number <sup>ISN</sup>.
+
+The synchronization requires each side to send its own initial sequence number and to receive a confirmation of it in acknowledgment from the remote TCP peer. Each side must also receive the remote peer's initial sequence number and send a confirming acknowledgment.
+
+![Exchange Initial Sequence Number](./images/ExchangeInitialSequenceNumber.png)
+
+Because steps 2 and 3 can be combined in a single message this is called the three-way (or three message) handshake <sup>3WHS</sup>.
+
+A Three-way Handshake <sup>3WHS</sup> is necessary because sequence numbers are not tied to a global clock in the network, and TCP implementations may have different mechanisms for picking the Initial Sequence Number <sup>ISN</sup>. The receiver of the first SYN has no way of knowing whether the segment was an old one or not, unless it remembers the last sequence number used on the connection (which is not always possible), and so it must ask the sender to verify this SYN. The three way handshake and the advantages of a clock driven scheme for ISN selection are discussed in [Connection management in transport protocols](https://www.sciencedirect.com/science/article/abs/pii/0376507578900533?via%3Dihub).
+
 
 ### 3.5. Establishing a Connection
 
